@@ -1,0 +1,30 @@
+
+.idea
+.vscode
+
+# python
+__pycache__
+*.pyc
+.ipynb_checkpoints/
+
+# OSX
+.DS_Store
+
+# notes
+*.org
+
+
+# solutions
+*_sol*
+*_solution*
+*_soln*
+*_Solution*
+*_Sol*
+
+# tests
+*_test*
+*test_*
+*tests/*
+
+# WIP
+*-Copy*
