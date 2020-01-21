@@ -223,7 +223,7 @@ def population_stats(df):
     True
     >>> (out['num_distinct'] <= 10).all()
     True
-    >> (out['pct_nonnull'] == 1.0).all()
+    >>> (out['pct_nonnull'] == 1.0).all()
     True
     """
     
