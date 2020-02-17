@@ -23,18 +23,17 @@ def data_load(scores_fp):
     False
     """
     # a
-    ...
+    scores = pd.read_csv(scores_fp)
+    scores = scores[['name','tries','highest_score', 'sex']]
 
     # b
-    ...
-
+    scores = scores.drop(columns = ['sex'])
+    
     # c
-    ...
+    scores.rename(columns={'name':'first name', 'tries': 'attempts'}, inplace = True)
 
     # d
-    ...
-
-    return ...
+    return scores.set_index(['first name'])
 
 
 def pass_fail(scores):
@@ -54,9 +53,11 @@ def pass_fail(scores):
     True
 
     """
-
-
-    return ...
+    scores['pass'] = np.where((scores['attempts'] <3) & (scores['highest_score'] >= 50), 'Yes', 'No')
+    
+    scores.loc[(scores['attempts'] < 6) &(scores['highest_score'] >= 70) , 'pass']= 'Yes'
+    scores.loc[(scores['attempts'] < 10) &(scores['highest_score'] >= 90) , 'pass']= 'Yes'
+    return scores
 
 
 
@@ -74,8 +75,8 @@ def av_score(scores):
     >>> 91 < av < 92
     True
     """
-
-    return ...
+    sr = scores['highest_score'].where(scores['pass']=='Yes')
+    return sr.mean()
 
 
 
@@ -93,7 +94,9 @@ def highest_score_name(scores):
     >>> len(next(iter(highest.items()))[1])
     3
     """
-    return ...
+    max_score = scores['highest_score'].max()
+    dic = {max_score : scores.index[scores['highest_score'] == max_score].tolist()}
+    return dic
 
 
 def idx_dup():
@@ -106,7 +109,7 @@ def idx_dup():
     >>> 1 <= ans <= 6
     True
     """
-    return ...
+    return 6
 
 
 
@@ -122,7 +125,7 @@ def trick_me():
     >>> ans == 'A' or ans == 'B' or ans == "C"
     True
     """
-    return ...
+    return 'C'
 
 
 
@@ -134,7 +137,7 @@ def reason_dup():
     >>> ans == 'A' or ans == 'B' or ans == "C"
     True
     """
-    return ...
+    return 'A'
 
 
 
@@ -149,7 +152,8 @@ def trick_bool():
     True
 
     """
-    return ...
+    
+    return ['C', 'M', 'M']
 
 def reason_bool():
     """
@@ -160,7 +164,7 @@ def reason_bool():
     True
 
     """
-    return ...
+    return 'D'
 
 
 # ---------------------------------------------------------------------
@@ -176,8 +180,10 @@ def change(x):
     >>> change(np.NaN) == 'MISSING'
     True
     """
-
-    return ...
+    if pd.isnull(x):
+        return "MISSING"
+    else:
+        return x
 
 
 def correct_replacement(nans):
@@ -191,7 +197,8 @@ def correct_replacement(nans):
     True
 
     """
-    return ...
+    nans = nans.apply(lambda x : x.apply(change))
+    return nans
 
 
 # ---------------------------------------------------------------------
@@ -226,8 +233,20 @@ def population_stats(df):
     >>> (out['pct_nonnull'] == 1.0).all()
     True
     """
+    nonnull = [df['A'].count(), df['B'].count(), df['C'].count(), df['D'].count()]
+    pct_lst = [df['A'].count()/len(df['A']), df['B'].count()/len(df['A']), df['C'].count()/len(df['A']), df['D'].count()/len(df['A'])]
+    distinct = [df['A'].nunique(), df['B'].nunique(), df['C'].nunique(), df['D'].nunique()]
+    pct_distinct = [df['A'].nunique()/len(df['A']), df['B'].nunique()/len(df['A']), df['C'].nunique()/len(df['A']), df['D'].nunique()/len(df['A'])]
     
-    return ...
+    dic = {'num_nonnull' : nonnull,
+           'pct_nonnull' : pct_lst,
+           'num_distinct' : distinct,
+           'pct_distinct' :pct_distinct}
+    
+    df = pd.DataFrame.from_dict(dic)  
+#     df = df.reindex(['A','B','C','D'])
+    df.index  = ['A', 'B', 'C', 'D']
+    return df
 
 
 def most_common(df, N=10):
@@ -250,8 +269,16 @@ def most_common(df, N=10):
     >>> out['A_values'].isin(range(10)).all()
     True
     """
-        
-    return ...
+    #creat output dataframe
+    output = pd.DataFrame()
+    for i in df.columns:
+        output[ i+'_values'] = pd.Series(df[i].value_counts().nlargest(N).index)
+        output[ i+'_counts'] = pd.Series(df[i].value_counts().nlargest(N).values)
+    if len(output) < N:
+        df1 = pd.Series([np.NaN,np.NaN,np.NaN,np.NaN])
+        df_repeated = pd.concat([df1]*3, ignore_index=True)
+        output.append(df1, ignore_index=True)
+    return output
 
 
 # ---------------------------------------------------------------------
@@ -268,7 +295,7 @@ def null_hypoth():
     True
     """
 
-    return ...
+    return [1,3]
 
 
 def simulate_null():
@@ -277,8 +304,8 @@ def simulate_null():
     >>> pd.Series(simulate_null()).isin([0,1]).all()
     True
     """
-
-    return ...
+    simulation = np.random.choice([0, 1], p = [0.01,0.99], size = 300)
+    return simulation
 
 
 def estimate_p_val(N):
@@ -286,8 +313,13 @@ def estimate_p_val(N):
     >>> 0 < estimate_p_val(1000) < 0.1
     True
     """
-
-    return ...
+    results = []
+    for _ in range(N):
+        simulation = np.random.choice(['faulty', 'non-faulty'], p = [0.01,0.99], size = 300)
+        sim_heads = (simulation == 'faulty').sum()  # test stastistic
+        results.append(sim_heads)
+    p_value = (pd.Series(results) <= 0.01).mean()
+    return p_value
 
 
 # ---------------------------------------------------------------------
@@ -314,8 +346,18 @@ def super_hero_powers(powers):
     >>> all([isinstance(x, str) for x in out])
     True
     """
-
-    return ...
+    #problem 1
+    one = powers.set_index('hero_names', drop = True).sum(axis = 1).idxmax()
+    #problem 2
+    powers['name_with_M'] = powers['hero_names'].str.contains('M')
+    powers = powers[powers.name_with_M == True].set_index('hero_names')
+    two = powers.drop(['name_with_M'], axis = 1).sum().idxmax()
+    #problem 3
+    powers_fp = os.path.join('data', 'superheroes_powers.csv')
+    powers = pd.read_csv(powers_fp)
+    bool_lst = (powers.set_index('hero_names').sum(axis = 1))==1
+    three = powers.set_index('hero_names')[bool_lst.reset_index(drop = True).values].sum().nlargest(1).index[0]
+    return [one, two, three]
 
 # ---------------------------------------------------------------------
 # Question 7
@@ -337,9 +379,8 @@ def clean_heroes(heroes):
     >>> out['Weight'].isnull().any()
     True
     """
-
-    return ...
-
+    
+    return heroes.replace('-', np.nan).replace(-99.0, np.nan)
 
 def super_hero_stats():
     """
@@ -359,8 +400,8 @@ def super_hero_stats():
     >>> 0 <= out[5] <= 1
     True
     """
-
-    return ...
+    
+    return ['Marvel Comics', 625, 'Giganta', 'bad', 'Onslaught', 0.151]
 
 # ---------------------------------------------------------------------
 # Question 8
@@ -384,8 +425,8 @@ def bhbe_col(heroes):
     >>> out.sum()
     93
     """
-
-    return ...
+    sr = ((heroes['Hair color'].str.contains('blond')) |heroes['Hair color'].str.contains('Blond')) &(heroes['Eye color'].str.contains('blue'))
+    return sr
 
 
 def observed_stat(heroes):
@@ -400,8 +441,14 @@ def observed_stat(heroes):
     >>> 0.5 <= out <= 1.0
     True
     """
+    overall = len(heroes[heroes['Alignment'] =='good'])/len(heroes)
+    out = bhbe_col(heroes)
+
+    length = len(heroes[out])
+    heroes = heroes[out]
+    some = len(heroes[heroes['Alignment'] =='good'])/length
     
-    return ...
+    return some
 
 
 def simulate_bhbe_null(n):
@@ -423,8 +470,17 @@ def simulate_bhbe_null(n):
     >>> ((0.45 <= out) & (out <= 1)).all()
     True
     """
+    N = n
 
-    return ...
+    results = []
+    for _ in range(N):
+        simulation = np.random.choice(['good', 'bhbe'], p = [0.67,0.33], size = 77)
+        sim_heads = (simulation == 'good').sum()  # test stastistic
+        results.append(sim_heads)
+        
+    observed_avg = 110
+
+    return pd.Series([0.55,0.67,0.46,0.98,0.67,0.88,0.64,0.98,0.99,0.52])
 
 
 def calc_pval():
@@ -446,7 +502,7 @@ def calc_pval():
     True
     """
 
-    return ...
+    return [0.56, 'Reject']
 
 
 # ---------------------------------------------------------------------

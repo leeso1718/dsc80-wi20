@@ -22,8 +22,10 @@ def latest_login(login):
     >>> result.loc[381, "Time"].hour > 12
     True
     """
-
-    return ...
+    login['Time'] = pd.to_datetime(login['Time'])
+    login['Time'] = login['Time'].dt.time
+    df = login.groupby('Login Id').max()
+    return df
 
 # ---------------------------------------------------------------------
 # Question # 2
@@ -44,8 +46,13 @@ def smallest_ellapsed(login):
     >>> 18 < result.loc[1233, "Time"].days < 23
     True
     """
+    #groupby diff
+    login['Time'] = pd.to_datetime(login['Time'])
+    #sorting mean x min o
+    table = login.groupby('Login Id').apply(lambda x: x.order(ascending=False))
+    smallest = table.apply(lambda x : x.diff().min())['Time'].dropna().to_frame()
 
-    return ...
+    return smallest
 
 
 # ---------------------------------------------------------------------
@@ -67,8 +74,9 @@ def total_seller(df):
     True
 
     """
+    table = df.set_index('Name')['Total'].to_frame()
     
-    return ...
+    return table
 
 
 def product_name(df):
@@ -83,8 +91,9 @@ def product_name(df):
     >>> out.loc["pen"].isnull().sum()
     0
     """
-    
-    return ...
+    table = pd.pivot_table(df, values=['Total'], index=['Product'],
+                    columns=['Name'], aggfunc=np.sum)
+    return table
 
 def count_product(df):
     """
@@ -98,8 +107,9 @@ def count_product(df):
     >>> out.size
     70
     """
-    
-    return ...
+    table = pd.pivot_table(df, values=['Total'], index=['Product','Name'],
+                    columns=['Date'], aggfunc=np.size).fillna(0)
+    return table
 
 
 def total_by_month(df):
@@ -114,8 +124,12 @@ def total_by_month(df):
     >>> out.shape[1]
     5
     """
+    df['Month'] = pd.to_datetime(df['Date']).apply(lambda x: '{month}'.format(month=x.month_name()))
+    table = pd.pivot_table(df, values=['Total'], index=['Name','Product'],
+                    columns=['Month'], aggfunc=np.size).fillna(0)
+
     
-    return ...
+    return table
 
 # ---------------------------------------------------------------------
 # Question # 4
@@ -136,8 +150,9 @@ def diff_of_means(data, col='orange'):
     >>> 0 <= out
     True
     """
+    abs_diff = abs(data.groupby('Factory')[col].mean().diff().iloc[-1])
     
-    return ...
+    return abs_diff
 
 
 def simulate_null(data, col='orange'):
@@ -156,11 +171,14 @@ def simulate_null(data, col='orange'):
     >>> 0 <= out <= 1.0
     True
     """
+    data = data.set_index('Factory')
+    shuffled_weights = (data[col].sample(replace=False, frac=1).reset_index('Factory'))
+    test_statistic = diff_of_means(shuffled_weights, col)
     
-    return ...
+    return test_statistic
 
 
-def pval_orange(data, col='orange'):
+def pval_orange(data, col='green'):
     """
     pval_orange takes in a dataframe of counts of 
     skittles (like skittles) and their origin, and 
@@ -176,8 +194,27 @@ def pval_orange(data, col='orange'):
     >>> 0 <= pval <= 0.1
     True
     """
+    n_repetitions = 1000
+
+    differences = []
+    for _ in range(n_repetitions):
+        # shuffle the weights
+        shuffled_weights = (data[col].sample(replace=False, frac=1).reset_index(drop= True))
+
+        # put them in a table
+        shuffled = (data.assign(**{'Shuffled number of orange skittles': shuffled_weights}))
+
+        # compute the group differences
+        group_means = (shuffled.groupby('Factory').mean().loc[:, 'Shuffled number of orange skittles'])
+        difference = group_means.diff().abs().iloc[-1]
+
+        # add it to the list of results
+        differences.append(difference)
+        
+    observed_difference = diff_of_means(data, col)
+    p_value = np.count_nonzero(differences >= observed_difference) / n_repetitions
     
-    return ...
+    return p_value
 
 
 # ---------------------------------------------------------------------
@@ -203,7 +240,8 @@ def ordered_colors():
     True
     """
 
-    return ...
+    return (('purple',0.973),('green',0.477),('red',0.228),('orange',0.046),('yellow', 0.0))
+
     
 
 # ---------------------------------------------------------------------
@@ -222,8 +260,9 @@ def same_color_distribution():
     >>> out[1] in ['Fail to Reject', 'Reject']
     True
     """
-    
-    return ...
+   
+   
+    return [0.005, 'Reject']
 
 # ---------------------------------------------------------------------
 # Question # 7
@@ -240,8 +279,9 @@ def perm_vs_hyp():
     >>> set(out) <= set(ans)
     True
     """
+    
 
-    return ...
+    return ['P','H','H','P','H']
 
 
 # ---------------------------------------------------------------------
@@ -260,7 +300,7 @@ def after_purchase():
     True
     """
 
-    return ...
+    return ['NI','MD','MAR','MCAR','MAR']
 
 # ---------------------------------------------------------------------
 # Question # 9
@@ -281,7 +321,7 @@ def multiple_choice():
     True
     """
 
-    return ...
+    return ['MCAR','NI','MD','NI','MAR']
 
 # ---------------------------------------------------------------------
 # DO NOT TOUCH BELOW THIS LINE

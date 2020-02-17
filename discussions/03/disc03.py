@@ -18,8 +18,9 @@ def plot_meal_by_day(tips):
     >>> type(ax)
     <class 'matplotlib.axes._subplots.AxesSubplot'>
     """
-
-    return ...
+    count_meals = tips['day'].value_counts()
+    tips_plot = count_meals.sort_index().plot(kind = 'barh', title = 'Counts of meals by day', color = ["blue",'orange','green','red'])
+    return tips_plot
 
 
 def plot_bill_by_tip(tips):
@@ -39,8 +40,8 @@ def plot_bill_by_tip(tips):
     >>> type(ax)
     <class 'matplotlib.axes._subplots.AxesSubplot'>
     """
+    return sns.scatterplot(data=tips, x='tip', y='total_bill', hue='day', size = 'size')
 
-    return ...
 
 
 def plot_tip_percentages(tips):
@@ -57,5 +58,13 @@ def plot_tip_percentages(tips):
     >>> type(ax)
     <class 'matplotlib.figure.Figure'>
     """
+    fig, axes = plt.subplots(1, 2)
+    percent = tips['tip']/tips['total_bill']
 
-    return ...
+    # plot axes[0]
+    percent.plot(kind='hist', bins = 10, ax=axes[0], density = False, title='counts')
+    # plot axes[1]
+    percent.plot(kind='hist', bins = 10, ax=axes[1], density = True, title='normalized')
+    # add the title to fig
+    fig.suptitle("histogram of tips percentages")
+    return fig

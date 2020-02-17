@@ -15,8 +15,8 @@ def impute_with_index(dg):
     >>> out.isnull().sum() == 0
     True
     """
-
-    return ...
+    sr = dg['B'].fillna(pd.Series(dg.index, index = dg.index))
+    return sr
 
 
 def impute_with_digit(dg):
@@ -32,5 +32,5 @@ def impute_with_digit(dg):
     >>> out.isnull().sum().sum() == 0
     True
     """
-
-    return ...
+    out = dg.apply(lambda x : x.fillna(x.get('A')%10), axis = 1)
+    return out

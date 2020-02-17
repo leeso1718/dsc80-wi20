@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-
+from scipy.stats import ks_2samp
 
 # ---------------------------------------------------------------------
 # Question # 1
@@ -18,7 +18,7 @@ def first_round():
     >>> out[1] is "NR" or out[1] is "R"
     True
     """
-    return ...
+    return [0.158, "NR"]
 
 
 def second_round():
@@ -34,7 +34,7 @@ def second_round():
     >>> out[2] is "ND" or out[2] is "D"
     True
     """
-    return ...
+    return [0.036, "R", "D"]
 
 
 # ---------------------------------------------------------------------
@@ -54,8 +54,50 @@ def verify_child(heights):
     >>> out['child_5'] > out['child_50']
     True
     """
+    pv_lst = []
+    for col in heights.columns[-7:]:
+        
+        heights_copy = heights.copy()
+        heights_copy['isnull'] = heights[col].isnull()
+       
+        #observed ks
+        observed_ks, _ = ks_2samp(
+        heights.loc[heights_copy['isnull'], 'father'],
+        heights.loc[~heights_copy['isnull'], 'father']
+        )
+        #ks statistic
+        n_repetitions = 100
 
-    return ...
+        kslist = []
+        for _ in range(n_repetitions):
+
+            # shuffle the child height
+            shuffled_height = (
+                heights_copy[col]
+                .sample(replace=False, frac=1)
+                .reset_index(drop=True)
+            )
+            shuffled_null = shuffled_height.isnull()
+
+            # 
+            shuffled = (
+                heights_copy
+                .assign(**{'Shuffled_Height': shuffled_null})
+            )
+
+            ks, _ = ks_2samp(
+                shuffled.loc[shuffled['Shuffled_Height'], 'father'],
+                shuffled.loc[~shuffled['Shuffled_Height'], 'father']
+            )
+
+            # add it to the list of results
+            kslist.append(ks)
+        npa = np.asarray(kslist, dtype=np.float32)    
+        p_value = np.count_nonzero(npa >= observed_ks) / len(kslist)
+        pv_lst.append(p_value)
+        
+    sr = pd.Series(pv_lst, index = heights.columns[-7:])
+    return sr
 
 
 def missing_data_amounts():
@@ -67,7 +109,7 @@ def missing_data_amounts():
     True
     """
 
-    return ...
+    return [1,2,5]
 
 
 # ---------------------------------------------------------------------
@@ -91,8 +133,14 @@ def cond_single_imputation(new_heights):
     >>> (df.child.std() - out.std()) > 0.5
     True
     """
+    new_heights = new_heights[['father', 'child_50']].rename(columns={'child_50': 'child'}).copy()
+    
+    new_heights['father'] =pd.qcut(new_heights['father'],4)
+    
+    imputation = new_heights.groupby('father').child.transform(lambda x: x.fillna(x.mean()))
 
-    return ...
+    
+    return imputation
 
 # ---------------------------------------------------------------------
 # Question # 4
@@ -116,8 +164,22 @@ def quantitative_distribution(child, N):
     >>> np.isclose(out.mean(), child.mean(), atol=1)
     True
     """
+    N_lst = []
+    for i in range(N):
+        #frequency -> prop (normalize)
+        pro_bin = np.histogram(child.dropna(), bins = 10, density = True)
 
-    return ...
+        # base on prop, choose the bin
+        sr = pd.Series(pro_bin[0], index = pro_bin[1][1:])
+        highest_prop = sr.sort_values(ascending = False).values[0]
+        indx = sr.apply(lambda x: x if x == highest_prop else np.NaN).dropna().index
+
+        #within the bin, choose the number to represent the missing value
+        imputation = np.random.choice(indx)
+        
+        N_lst.append(imputation)
+    npa = np.asarray(N_lst, dtype=np.float32)    
+    return npa
 
 
 def impute_height_quant(child):
@@ -136,8 +198,10 @@ def impute_height_quant(child):
     >>> np.isclose(out.mean(), child.mean(), atol=0.5)
     True
     """
+    lst = quantitative_distribution(child, 100)
+    child = child.fillna(np.random.choice(lst))
 
-    return ...
+    return child
 
 
 # ---------------------------------------------------------------------
@@ -155,7 +219,8 @@ def answers():
     >>> len(list2)
     6
     """
-    return ...
+    
+    return [1, 2, 2, 1],["*popads.net", "*qq.com", "*360.cn", "*facebook.com", "*linkedin.com", "*linkedin.com"]
 
 
 

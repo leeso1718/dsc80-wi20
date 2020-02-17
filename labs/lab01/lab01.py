@@ -58,8 +58,14 @@ def median(nums):
     >>> median([1, 2, 3, 4]) == 2.5
     True
     """
-    
-    return ...
+    nums.sort()
+    if(len(nums)%2==0):
+        middle = int(len(nums)/2)
+        median = (nums[middle]+nums[middle-1])/2
+    else:
+        middle = int(len(nums)/2)
+        median = nums[middle]
+    return median
 
 
 # ---------------------------------------------------------------------
@@ -82,8 +88,21 @@ def same_diff_ints(ints):
     >>> same_diff_ints([1,3,5,7,9])
     False
     """
-
-    return ...
+    find = False
+    i = 0
+    j = 1
+    while(find == False):
+        if(i == len(ints)):
+            break
+        if(j != len(ints)):
+            if(abs(ints[i]-ints[j]) == abs(j-i)):
+                find = True
+            j = j + 1
+        else:
+            i = i + 1
+            j = i + 1
+   
+    return find
 
 
 # ---------------------------------------------------------------------
@@ -106,10 +125,11 @@ def prefixes(s):
     >>> prefixes('aaron')
     'aaaaaraaroaaron'
     """
-
-
-    return ...
-
+    str = ""
+    for x in range(len(s)+1):
+        str += (s[:x])
+   
+    return str
 
 # ---------------------------------------------------------------------
 # Question # 4
@@ -132,8 +152,28 @@ def evens_reversed(N):
     >>> evens_reversed(10)
     '10 08 06 04 02'
     """
-    
-    return ...
+    arr = []
+    index = 0
+    for x in range(N+1):
+        if(x%2 == 0 and x != 0):
+            arr.insert(index, x)
+            index ++1
+            
+    mystring = "" 
+    for x in range(len(arr)):
+        if(arr[0] >= 10):
+            if(arr[x] > 9):
+                mystring += str(arr[x]) + " "
+            elif arr[x] == 2:
+                mystring += "0" + str(arr[x])
+            else:
+                mystring += "0" + str(arr[x]) + " "
+        else:
+            if arr[x] == 2:
+                mystring += str(arr[x])
+            else:
+                mystring += str(arr[x]) + " "
+    return mystring
 
 
 # ---------------------------------------------------------------------
@@ -153,8 +193,10 @@ def last_chars(fh):
     >>> last_chars(open(fp))
     'hrg'
     """
-
-    return ...
+    string = ""
+    for line in fh:
+        string += line[-2]
+    return string
 
 
 # ---------------------------------------------------------------------
@@ -177,12 +219,13 @@ def arr_1(A):
     True
     >>> np.all(out >= A)
     True
-    """
+    """    
+    index_lst = (np.arange(len(A)))**2
+    return A + index_lst
 
-    return ...
 
 
-def arr_2(A):
+def arr_2(A): 
     """
     arr_2 takes in a numpy array of integers
     and returns a boolean array (i.e. an array of booleans)
@@ -199,8 +242,7 @@ def arr_2(A):
     >>> out.dtype == np.dtype('bool')
     True
     """
-
-    return ...
+    return A % 16 ==0
 
 
 def arr_3(A):
@@ -223,8 +265,7 @@ def arr_3(A):
     >>> out.max() == 0.03
     True
     """
-
-    return ...
+    return np.round(np.diff(A)/A[:-1], decimals = 2)
 
 
 def arr_4(A):
@@ -245,8 +286,9 @@ def arr_4(A):
     >>> out == 1
     True
     """
-
-    return ...
+    ser = 20%pd.Series(A)
+    myseries = ser.cumsum() > A
+    return myseries[myseries==True].index[0]
 
 
 # ---------------------------------------------------------------------
@@ -272,8 +314,48 @@ def movie_stats(movies):
     >>> isinstance(out.loc['second_lowest'], str)
     True
     """
+    data = []
+    #number of years covered by the dataset 0
+    try:
+        data.append(movies['Year'].count())
+    except:
+        pass
+    #total number of movies 1
+    try:
+        data.append(movies['Number of Movies'].sum())
+    except:
+        pass
+    #the year with the feweat number of movies made; should return earliest year 2
+    try:
+        data.append(movies.loc[movies['Number of Movies'].idxmin()]["Year"])
+    except:
+        pass
+    #average amount of money grossed over all the years 3
+    try:
+        data.append(movies['Total Gross'].sum()/float(movies['Total Gross'].size))
+    except:
+        pass
+    #year with the highest gorss per movie 4
+    try:
+        data.append(movies.loc[(movies['Total Gross']/movies['Number of Movies']).idxmax()]['Year'])
+    except:
+        pass
+    #name of the top movie during the second-lowest(total)grossing year 5
+    try:
+        data.append(movies.sort_values(by=['Total Gross']).iloc[1]['#1 Movie'])
+    except:
+        pass
+    #average number of movies made the year after a Harry Potter movie was the #1 movie 6
+    try:
+        dataframe = movies.loc[movies['#1 Movie'].str.contains('Harry Potter')]['Year']+1
+        index = dataframe.index
+        data.append(movies.loc[index]['Number of Movies'].mean())
+    except:
+        pass
+    
+    ser = pd.Series(data, index = 'num_years tot_movies yr_fewest_movies avg_gross highest_per_movie second_lowest avg_after_harry'.split())
+    return ser
 
-    return ...
     
 
 # ---------------------------------------------------------------------
@@ -309,9 +391,22 @@ def parse_malformed(fp):
     >>> (dg == df.iloc[9:13]).all().all()
     True
     """
-
-    return ...
-
+    df = pd.DataFrame()
+    column_byline = []
+    length = 0
+    with open(fp) as f:
+        for lines in f:
+            column_byline.append(lines.replace("\n", "").replace('"', '').split(","))
+            for x in range(len(column_byline)):
+                for y in range(len(column_byline[x])):
+                    column_byline[x] = [i for i in column_byline[x] if i != ''] 
+                    if(len(column_byline[x]) > len(column_byline[0])):
+                        length = len(column_byline[x])
+                        column_byline[x][length-2:length] = [','.join(column_byline[x][length-2:length])]
+            df=pd.DataFrame(column_byline[1:], columns = column_byline[0])
+            df['weight'] = pd.to_numeric(df['weight'])
+            df['height'] = pd.to_numeric(df['height'])
+    return df
 
 # ---------------------------------------------------------------------
 # DO NOT TOUCH BELOW THIS LINE

@@ -19,8 +19,10 @@ def combined_seasons(df1, df2):
     >>> result[1] in result[0].index
     True
     """
+    joined = pd.merge(df1,df2, on = 'Tm', suffixes = ('_2017', '_2018')).set_index('Tm')    
+    highest_hr = joined.filter(regex = 'HR').sum(axis = 1).idxmax()
 
-    return ...
+    return [joined,highest_hr]
 
 
 def seasonal_average(df1, df2):
@@ -43,5 +45,6 @@ def seasonal_average(df1, df2):
     >>> result.loc['MIN']['HR']
     186.0
     """
+    avg_concat = pd.concat([df1, df2]).groupby('Tm').mean()
 
-    return ...
+    return avg_concat
